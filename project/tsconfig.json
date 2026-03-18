@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "none",
+    "outFile": "dist/app.js",
+    "strict": true,
+    "skipLibCheck": true,
+    "lib": [
+      "DOM",
+      "ES2020"
+    ]
+  },
+  "files": [
+    "src/defaultWords.ts",
+    "src/app.ts"
+  ]
+}
