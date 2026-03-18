@@ -90,4 +90,4 @@ lerna-debug.log
 Thumbs.db
 
 .snapshots
-.vscode/
+.vscode
