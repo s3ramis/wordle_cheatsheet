@@ -1,6 +1,6 @@
 
 type FeedbackState = "unknown" | "absent" | "present" | "correct";
-
+type MessageTone = "default" | "warning" | "success";
 interface SubmittedGuess {
   id: number;
   guess: string;
@@ -49,17 +49,12 @@ app.innerHTML = `
       <div>
         <p class="eyebrow">Wordle-Helfer für Deutsch</p>
         <h1>5-Buchstaben-Cheat-Engine</h1>
-        <p class="subtitle">Tippe ein Wort ein, markiere pro Feld grau/gelb/grün und lass dir sofort passende deutsche Kandidaten vorschlagen.</p>
+        <p class="subtitle">Wort eintippen, Status grau/gelb/grün pro Feld festlegen und die am besten passenden Wörter werden vorgeschlagen.</p>
       </div>
       <div class="hero-stats">
         <div class="hero-stat">
-          <span class="hero-label">Geladene Wörter</span>
+          <span class="hero-label">Bekannte Wörter</span>
           <strong id="loaded-count">0</strong>
-        </div>
-        <div class="hero-stat">
-          <span class="hero-label">Passende Kandidaten</span>
-          <strong id="candidate-count">0</strong>
-        </div>
       </div>
     </header>
 
@@ -120,14 +115,6 @@ app.innerHTML = `
           <ol id="suggestions" class="suggestions"></ol>
         </section>
 
-        <section class="panel">
-          <div class="panel-head">
-            <h2>Kandidaten</h2>
-            <span id="candidate-note" class="tiny"></span>
-          </div>
-          <div id="candidates" class="candidates"></div>
-        </section>
-
         <section class="panel legend-panel">
           <div class="panel-head">
             <h2>Legende</h2>
@@ -147,7 +134,6 @@ app.innerHTML = `
 `;
 
 const loadedCountEl = must<HTMLSpanElement>("#loaded-count");
-const candidateCountEl = must<HTMLSpanElement>("#candidate-count");
 const wordlistBadgeEl = must<HTMLSpanElement>("#wordlist-badge");
 const wordlistMetaEl = must<HTMLParagraphElement>("#wordlist-meta");
 const fileInputEl = must<HTMLInputElement>("#wordlist-file");
@@ -161,8 +147,6 @@ const resetAllEl = must<HTMLButtonElement>("#reset-all");
 const hintEl = must<HTMLParagraphElement>("#hint");
 const keyboardEl = must<HTMLDivElement>("#keyboard");
 const suggestionsEl = must<HTMLOListElement>("#suggestions");
-const candidatesEl = must<HTMLDivElement>("#candidates");
-const candidateNoteEl = must<HTMLSpanElement>("#candidate-note");
 
 function must<T extends Element>(selector: string): T {
   const element = document.querySelector<T>(selector);
@@ -240,7 +224,6 @@ function parseImportedWordList(content: string): string[] {
         );
       }
     } catch {
-      // Fall through to text parser.
     }
   }
 
@@ -258,7 +241,6 @@ function saveCustomWordList(words: string[], label: string): void {
       }),
     );
   } catch {
-    // Ignore storage failures.
   }
 }
 
@@ -281,7 +263,6 @@ function loadCustomWordList(): void {
     activeWordListNote = CUSTOM_WORD_SOURCE_NOTE;
     customWordListActive = true;
   } catch {
-    // Ignore malformed storage.
   }
 }
 
@@ -289,7 +270,6 @@ function clearCustomWordList(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {
-    // Ignore storage failures.
   }
 }
 
@@ -395,7 +375,7 @@ function resetDraft(): void {
   activeIndex = 0;
 }
 
-function updateHint(message: string, tone: "default" | "warning" | "success" = "default"): void {
+function updateHint(message: string, tone: MessageTone = "default"): void {
   hintEl.textContent = message;
   hintEl.dataset.tone = tone;
 }
@@ -413,7 +393,7 @@ function setLetter(letter: string): void {
     const nextEmpty = draftLetters.findIndex((entry, index) => index > activeIndex && entry === "");
     activeIndex = nextEmpty === -1 ? Math.min(activeIndex + 1, 4) : nextEmpty;
   }
-  updateHint("Buchstabe gesetzt. Status darunter bei Bedarf auf grau, gelb oder grün umschalten.");
+  updateHint("Buchstabe gesetzt. Status auf grau, gelb oder grün festlegen.");
   render();
 }
 
@@ -440,7 +420,7 @@ function setActiveIndex(index: number): void {
 
 function toggleFeedback(index: number): void {
   if (!draftLetters[index]) {
-    updateHint("Erst einen Buchstaben setzen, dann den Status markieren.", "warning");
+    updateHint("Erst Buchstaben setzen, dann den Status festlegen.", "warning");
     return;
   }
   draftFeedback[index] = cycleFeedback(draftFeedback[index]);
@@ -458,7 +438,7 @@ function undoLastGuess(): void {
     return;
   }
   submittedGuesses = submittedGuesses.slice(0, -1);
-  updateHint("Der letzte Tipp wurde entfernt.", "success");
+  updateHint("Letzter Tipp entfernt.", "success");
   render();
 }
 
@@ -468,11 +448,11 @@ function canSubmitDraft(): boolean {
 
 function submitDraft(): void {
   if (!draftLetters.every(Boolean)) {
-    updateHint("Bitte zuerst alle 5 Buchstaben setzen.", "warning");
+    updateHint("Zuerst alle 5 Buchstaben füllen.", "warning");
     return;
   }
   if (draftFeedback.some((state) => state === "unknown")) {
-    updateHint("Bitte für jedes Feld grau, gelb oder grün festlegen.", "warning");
+    updateHint("Für jedes Feld einen Status festlegen.", "warning");
     return;
   }
 
@@ -509,7 +489,7 @@ async function importWordList(file: File): Promise<void> {
   const content = await readFileContents(file);
   const cleaned = parseImportedWordList(content);
   if (cleaned.length === 0) {
-    updateHint("In der Datei wurde keine gültige 5-Buchstaben-Liste gefunden.", "warning");
+    updateHint("In der Datei wurde keine gültige 5-Letter-Word-Liste gefunden.", "warning");
     return;
   }
   activeWordList = cleaned;
@@ -519,7 +499,7 @@ async function importWordList(file: File): Promise<void> {
   submittedGuesses = [];
   resetDraft();
   saveCustomWordList(cleaned, activeWordListLabel);
-  updateHint(`Eigene Wortliste geladen: ${cleaned.length} Wörter.`, "success");
+  updateHint(`Custom Wortliste geladen: ${cleaned.length} Wörter.`, "success");
   render();
 }
 
@@ -628,7 +608,6 @@ function renderResults(): void {
   const candidates = getCandidates();
   const ranked = rankCandidates(candidates);
   loadedCountEl.textContent = String(activeWordList.length);
-  candidateCountEl.textContent = String(candidates.length);
   wordlistBadgeEl.textContent = customWordListActive ? "Eigene Liste" : "Standardliste";
   wordlistMetaEl.textContent = `${activeWordListLabel}. ${activeWordListNote}`;
 
@@ -639,13 +618,6 @@ function renderResults(): void {
   if (ranked.length === 0) {
     suggestionsEl.innerHTML = `<li class="empty-list">Keine Treffer. Entferne einen Tipp oder prüfe die gesetzten Farben.</li>`;
   }
-
-  const shownCandidates = [...candidates].sort((a, b) => a.localeCompare(b, "de")).slice(0, 250);
-  candidateNoteEl.textContent =
-    candidates.length > shownCandidates.length ? `zeige ${shownCandidates.length} von ${candidates.length}` : `${candidates.length} insgesamt`;
-  candidatesEl.innerHTML = shownCandidates.length
-    ? shownCandidates.map((word) => `<span class="candidate-chip">${word}</span>`).join("")
-    : `<p class="empty-list">Keine Kandidaten mehr übrig.</p>`;
 }
 
 function render(): void {

@@ -4,7 +4,7 @@ import path from "node:path";
 
 const [inputPath, outputPath] = process.argv.slice(2);
 if (!inputPath || !outputPath) {
-  console.error("Verwendung: node scripts/extract-hunspell-5.mjs <input.dic> <output.txt|output.json>");
+  console.error("usage: node scripts/extract-hunspell-5.mjs <input.dic> <output.txt|output.json>");
   process.exit(1);
 }
 
@@ -28,4 +28,4 @@ words.sort((a, b) => a.localeCompare(b, "de"));
 const outExt = path.extname(outputPath).toLowerCase();
 const payload = outExt === ".json" ? JSON.stringify(words, null, 2) + "\n" : words.join("\n") + "\n";
 fs.writeFileSync(outputPath, payload, "utf8");
-console.error(`Geschrieben: ${words.length} Wörter -> ${outputPath}`);
+console.error(`written: ${words.length} words -> ${outputPath}`);
