@@ -1,69 +1,69 @@
-# Wordle-Cheatsheet
+# wordle-cheatsheet
 
-Cheatsheet für [deutsches Wordle](https://www.wortsuchspiel.de/).
+cheatsheet for [german wordle](https://www.wortsuchspiel.de/).
 
-## Features
+## features
 
-- fünf Buchstabenfelder für die Eingabe
-- Bildschirmtastatur inkl. Umlaute und ß
-- Feld Status festlegen: `grau`, `gelb`, `grün`
-- Vorschlagsliste mit Priorisierungslogik
-- custom Wortlisten in `.txt`, `.json` oder `.dic` Format laden
+* five letter fields for input
+* on-screen keyboard including umlauts and ß
+* set field status: `grey`, `yellow`, `green`
+* suggestion list with prioritization logic
+* load custom word lists in `.txt`, `.json` or `.dic` format
 
-## Tastatur-Shortcuts
+## keyboard shortcuts
 
-- Buchstaben tippen oder anklicken
-- `Backspace`: löschen
-- `Enter`: Tipp übernehmen
-- `←` / `→`: Feld wechseln
-- `1` = grau, `2` = gelb, `3` = grün für das aktive Feld
+* type or click letters
+* `backspace`: delete
+* `enter`: submit guess
+* `←` / `→`: switch field
+* `1` = grey, `2` = yellow, `3` = green for the active field
 
-## Standard-Wortliste
+## default word list
 
-Die mitgelieferte Liste basiert auf 5-Letter-Words die aus Hunspell LibreOffice de_DE Wordlist extrahiert wurden. (`/scripts`)
+the included list is based on 5-letter words extracted from the hunspell libreoffice de_de word list. (`/scripts`)
 
-Enthalten sind aktuell **3661** eindeutige 5-Buchstaben-Einträge.
+currently contains **3661** unique 5-letter entries.
 
-- basiert auf Hunspell-Headwords, d.h. dekliniert bzw. konjugierte Wortformen sind nicht enthalten
-- laut mitgeliefertem README können zusätzliche `frami`-Einträge ungeprüft sein
+* based on hunspell headwords, i.e. declined or conjugated word forms are not included
+* according to the included readme, additional `frami` entries may be unverified
 
-## Wortliste selbst zusammensetzen
+## building your own word list
 
-### 1. Mitgelieferte Wortliste
+### 1. included word list
 
-Unter `wordlists/source/de_DE_frami.dic` liegt schon eine fertige Wortliste.
-Diese muss noch auf 5 Zeichen gefiltert werden.
+a ready-made word list is available at `wordlists/source/de_de_frami.dic`.
+this still needs to be filtered to 5 characters.
 
-Dafür liegt dieses Script bei:
-
-```bash
-node scripts/extract-hunspell-5.mjs wordlists/source/de_DE_frami.dic wordlists/words-5.custom.txt
-```
-
-Das Script:
-
-1. liest die Hunspell-Datei mit behindertem Latin-1 Encoding
-2. entfernt Flags hinter `/`
-3. normalisiert auf Kleinbuchstaben
-4. behält nur `^[a-zäöüß]{5}$`
-5. entfernt Dopplungen
-
-### Variante B – bessere Abdeckung
-
-Für eine kompetentere Liste, lieber Daten aus einem Morphologie-Lexikon nehmen und über das mitgelieferte Skript auf 5-Letter-Words filtern.
-
-Für `.txt` oder `.json` liegt auch ein Extraction-Script bei:
+for that, this script is included:
 
 ```bash
-node scripts/filter-5-letters.mjs dein-export.txt wordlists/words-5.fullforms.txt
+node scripts/extract-hunspell-5.mjs wordlists/source/de_de_frami.dic wordlists/words-5.custom.txt
 ```
 
-## Eigene Liste in die App laden
+the script:
 
-In der App oben unter **Wortliste** eine Datei laden.
+1. reads the hunspell file using ancient latin-1 encoding
+2. removes flags after `/`
+3. normalizes to lowercase
+4. keeps only `^[a-zäöüß]{5}$`
+5. removes duplicates
 
-Akzeptiert werden:
+### option b – better coverage
 
-- `.txt` – ein Wort pro Zeile
-- `.json` – Array von Wörtern oder `{ "words": [...] }`
-- `.dic` – Hunspell-Datei
+for a more complete list, it is recommended to use data from a morphology lexicon and filter it to 5-letter words using the provided script.
+
+an extraction script for `.txt` or `.json` is also included:
+
+```bash
+node scripts/filter-5-letters.mjs your-export.txt wordlists/words-5.fullforms.txt
+```
+
+## loading a custom list into the app
+
+in the app, load a file under **word list** at the top.
+
+accepted formats:
+
+* `.txt` – one word per line
+* `.json` – array of words or `{ "words": [...] }`
+* `.dic` – hunspell file
