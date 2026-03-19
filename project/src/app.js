@@ -2,10 +2,10 @@
 const STORAGE_KEY = "wordle-cheat-de.custom-wordlist.v1";
 const WORD_REGEX = /^[a-zäöüß]{5}$/u;
 const FEEDBACK_LABELS = {
-    unknown: "offen",
-    absent: "grau",
-    present: "gelb",
-    correct: "grün",
+    unknown: "open",
+    absent: "grey",
+    present: "orange",
+    correct: "green",
 };
 const FEEDBACK_ORDER = ["unknown", "absent", "present", "correct"];
 const KEYBOARD_ROWS = [
@@ -24,67 +24,67 @@ let activeIndex = 0;
 let nextGuessId = 1;
 const app = document.querySelector("#app");
 if (!app) {
-    throw new Error("App root not found.");
+    throw new Error("app root not found.");
 }
 app.innerHTML = `
   <div class="shell">
     <header class="hero">
       <div>
-        <p class="eyebrow">Wordle-Helfer für Deutsch</p>
-        <h1>5-Buchstaben-Cheat-Engine</h1>
-        <p class="subtitle">Wort eintippen, Status grau/gelb/grün pro Feld festlegen und die am besten passenden Wörter werden vorgeschlagen.</p>
+        <p class="eyebrow">wordle cheatsheet</p>
+        <h1>5-letter-word-cheat-engine</h1>
+        <p class="subtitle">input word, set status gray/orange/green for each field and get the best matching words for the wordle logic.</p>
       </div>
       <div class="hero-stats">
         <div class="hero-stat">
-          <span class="hero-label">Bekannte Wörter</span>
+          <span class="hero-label">known words</span>
           <strong id="loaded-count">0</strong>
       </div>
     </header>
 
     <section class="panel">
       <div class="panel-head">
-        <h2>Wortliste</h2>
-        <span class="badge" id="wordlist-badge">Standardliste</span>
+        <h2>wordlist</h2>
+        <span class="badge" id="wordlist-badge">default list (german)</span>
       </div>
       <p class="muted" id="wordlist-meta"></p>
       <div class="wordlist-actions">
         <label class="file-button">
           <input id="wordlist-file" type="file" accept=".txt,.json,.dic" />
-          Wortliste laden
+          load custom wordlist
         </label>
-        <button id="restore-defaults" type="button" class="secondary">Standardliste wiederherstellen</button>
+        <button id="restore-defaults" type="button" class="secondary">reset to default list</button>
       </div>
-      <p class="tiny">Akzeptiert JSON, Textdateien und Hunspell-<code>.dic</code>. Es bleiben nur Wörter mit exakt 5 Zeichen aus <code>a-z ä ö ü ß</code>.</p>
+      <p class="tiny">accepts .json, .txt and hunspell-<code>.dic</code>. only 5-letter-words are used for the cheat engine incl. <code>a-z ä ö ü ß</code>.</p>
     </section>
 
     <section class="layout">
       <div class="column-main">
         <section class="panel">
           <div class="panel-head">
-            <h2>Bereits gesetzte Tipps</h2>
+            <h2>attempt history</h2>
           </div>
-          <div id="submitted-rows" class="submitted-rows empty-state">Noch keine Tipps übernommen.</div>
+          <div id="submitted-rows" class="submitted-rows empty-state">no attempts have been made yet.</div>
         </section>
 
         <section class="panel">
           <div class="panel-head">
-            <h2>Aktuelle Eingabe</h2>
-            <span class="tiny">Wiederholte Buchstaben werden wie bei Wordle korrekt behandelt.</span>
+            <h2>current attempt</h2>
+            <span class="tiny">duplicate letters are handled the wordle way.</span>
           </div>
           <div id="editor-row" class="editor-row"></div>
           <div class="editor-actions">
-            <button id="submit-guess" type="button">Tipp übernehmen</button>
-            <button id="clear-row" type="button" class="secondary">Zeile leeren</button>
-            <button id="undo-last" type="button" class="secondary">Letzten Tipp löschen</button>
-            <button id="reset-all" type="button" class="secondary danger">Alles zurücksetzen</button>
+            <button id="submit-guess" type="button">make attempt</button>
+            <button id="clear-row" type="button" class="secondary">clear line</button>
+            <button id="undo-last" type="button" class="secondary">clear last attempt</button>
+            <button id="reset-all" type="button" class="secondary danger">clear all attempts</button>
           </div>
-          <p id="hint" class="hint">Buchstaben per Tastatur oder Mausklick eingeben. Darunter pro Feld den Status auf grau, gelb oder grün setzen.</p>
+          <p id="hint" class="hint">input letters using the physical or on-screen keyboard. set field status to orange, green or gray.</p>
         </section>
 
         <section class="panel">
           <div class="panel-head">
             <h2>Tastatur</h2>
-            <span class="tiny">Enter übernimmt den Tipp, Backspace löscht.</span>
+            <span class="tiny">return makes the attempt, backspace clears the last letter.</span>
           </div>
           <div id="keyboard" class="keyboard"></div>
         </section>
@@ -93,22 +93,22 @@ app.innerHTML = `
       <aside class="column-side">
         <section class="panel">
           <div class="panel-head">
-            <h2>Beste Vorschläge</h2>
+            <h2>matching words</h2>
           </div>
           <ol id="suggestions" class="suggestions"></ol>
         </section>
 
         <section class="panel legend-panel">
           <div class="panel-head">
-            <h2>Legende</h2>
+            <h2>legend</h2>
           </div>
           <div class="legend-grid">
-            <span class="legend-chip state-absent">grau</span>
-            <p>Buchstabe kommt in der Lösung nicht vor.</p>
-            <span class="legend-chip state-present">gelb</span>
-            <p>Buchstabe kommt vor, aber an einer anderen Stelle.</p>
-            <span class="legend-chip state-correct">grün</span>
-            <p>Buchstabe steht an genau dieser Position.</p>
+            <span class="legend-chip state-absent">gray</span>
+            <p>word doesnt contain the letter.</p>
+            <span class="legend-chip state-present">orange</span>
+            <p>word does contain the letter, but not at this position.</p>
+            <span class="legend-chip state-correct">green</span>
+            <p>word does contain the letter at this exact position.</p>
           </div>
         </section>
       </aside>
@@ -132,7 +132,7 @@ const suggestionsEl = must("#suggestions");
 function must(selector) {
     const element = document.querySelector(selector);
     if (!element) {
-        throw new Error(`Element not found: ${selector}`);
+        throw new Error(`element not found: ${selector}`);
     }
     return element;
 }
@@ -225,7 +225,7 @@ function loadCustomWordList() {
             return;
         }
         activeWordList = cleaned;
-        activeWordListLabel = typeof parsed.label === "string" ? parsed.label : "Eigene Wortliste";
+        activeWordListLabel = typeof parsed.label === "string" ? parsed.label : "custom wordlist";
         activeWordListNote = CUSTOM_WORD_SOURCE_NOTE;
         customWordListActive = true;
     }
@@ -346,7 +346,7 @@ function setLetter(letter) {
         const nextEmpty = draftLetters.findIndex((entry, index) => index > activeIndex && entry === "");
         activeIndex = nextEmpty === -1 ? Math.min(activeIndex + 1, 4) : nextEmpty;
     }
-    updateHint("Buchstabe gesetzt. Status auf grau, gelb oder grün festlegen.");
+    updateHint("attempt added. set status to gray, orange or green.");
     render();
 }
 function backspace() {
@@ -370,7 +370,7 @@ function setActiveIndex(index) {
 }
 function toggleFeedback(index) {
     if (!draftLetters[index]) {
-        updateHint("Erst Buchstaben setzen, dann den Status festlegen.", "warning");
+        updateHint("first add the letters, then set the status.", "warning");
         return;
     }
     draftFeedback[index] = cycleFeedback(draftFeedback[index]);
@@ -382,11 +382,11 @@ function removeGuess(id) {
 }
 function undoLastGuess() {
     if (submittedGuesses.length === 0) {
-        updateHint("Es gibt noch keinen übernommenen Tipp.", "warning");
+        updateHint("no attempts made yet", "warning");
         return;
     }
     submittedGuesses = submittedGuesses.slice(0, -1);
-    updateHint("Letzter Tipp entfernt.", "success");
+    updateHint("removed last attempt", "success");
     render();
 }
 function canSubmitDraft() {
@@ -394,11 +394,11 @@ function canSubmitDraft() {
 }
 function submitDraft() {
     if (!draftLetters.every(Boolean)) {
-        updateHint("Zuerst alle 5 Buchstaben füllen.", "warning");
+        updateHint("first add all 5 letters.", "warning");
         return;
     }
     if (draftFeedback.some((state) => state === "unknown")) {
-        updateHint("Für jedes Feld einen Status festlegen.", "warning");
+        updateHint("set a status for every field.", "warning");
         return;
     }
     const guess = draftLetters.join("");
@@ -413,7 +413,7 @@ function submitDraft() {
     ];
     nextGuessId += 1;
     resetDraft();
-    updateHint(`Tipp „${guess}“ übernommen.`, "success");
+    updateHint(`attempt „${guess}“ made.`, "success");
     render();
 }
 async function readFileContents(file) {
@@ -432,17 +432,17 @@ async function importWordList(file) {
     const content = await readFileContents(file);
     const cleaned = parseImportedWordList(content);
     if (cleaned.length === 0) {
-        updateHint("In der Datei wurde keine gültige 5-Letter-Word-Liste gefunden.", "warning");
+        updateHint("no valid 5-letter-word list found in the file.", "warning");
         return;
     }
     activeWordList = cleaned;
-    activeWordListLabel = `${file.name} (${cleaned.length} Wörter)`;
+    activeWordListLabel = `${file.name} (${cleaned.length} words)`;
     activeWordListNote = CUSTOM_WORD_SOURCE_NOTE;
     customWordListActive = true;
     submittedGuesses = [];
     resetDraft();
     saveCustomWordList(cleaned, activeWordListLabel);
-    updateHint(`Custom Wortliste geladen: ${cleaned.length} Wörter.`, "success");
+    updateHint(`custom wordlist loaded: ${cleaned.length} words.`, "success");
     render();
 }
 function restoreDefaults() {
@@ -453,7 +453,7 @@ function restoreDefaults() {
     submittedGuesses = [];
     resetDraft();
     clearCustomWordList();
-    updateHint("Standardliste wiederhergestellt.", "success");
+    updateHint("reset to default wordlist.", "success");
     render();
 }
 function getKeyboardStates() {
@@ -472,7 +472,7 @@ function getKeyboardStates() {
 function renderSubmittedRows() {
     if (submittedGuesses.length === 0) {
         submittedRowsEl.className = "submitted-rows empty-state";
-        submittedRowsEl.innerHTML = "Noch keine Tipps übernommen.";
+        submittedRowsEl.innerHTML = "no attempts made yet.";
         return;
     }
     submittedRowsEl.className = "submitted-rows";
@@ -487,7 +487,7 @@ function renderSubmittedRows() {
                   </div>`)
         .join("")}
           </div>
-          <button type="button" class="icon-button remove-guess" data-remove-id="${entry.id}" aria-label="Tipp löschen">×</button>
+          <button type="button" class="icon-button remove-guess" data-remove-id="${entry.id}" aria-label="remove attempt">×</button>
         </div>
       `)
         .join("");
@@ -542,14 +542,14 @@ function renderResults() {
     const candidates = getCandidates();
     const ranked = rankCandidates(candidates);
     loadedCountEl.textContent = String(activeWordList.length);
-    wordlistBadgeEl.textContent = customWordListActive ? "Eigene Liste" : "Standardliste";
+    wordlistBadgeEl.textContent = customWordListActive ? "custom wordlistlist" : "default wordlist";
     wordlistMetaEl.textContent = `${activeWordListLabel}. ${activeWordListNote}`;
     suggestionsEl.innerHTML = ranked
         .slice(0, 20)
         .map((entry) => `<li><span>${entry.word}</span><strong>${entry.score}</strong></li>`)
         .join("");
     if (ranked.length === 0) {
-        suggestionsEl.innerHTML = `<li class="empty-list">Keine Treffer. Entferne einen Tipp oder prüfe die gesetzten Farben.</li>`;
+        suggestionsEl.innerHTML = `<li class="empty-list">no gits. reenter the attempt correctly or check if the colors have been set correctly.</li>`;
     }
 }
 function render() {
@@ -571,14 +571,14 @@ restoreDefaultsEl.addEventListener("click", restoreDefaults);
 submitGuessEl.addEventListener("click", submitDraft);
 clearRowEl.addEventListener("click", () => {
     resetDraft();
-    updateHint("Aktuelle Zeile geleert.", "success");
+    updateHint("cleared current line.", "success");
     render();
 });
 undoLastEl.addEventListener("click", undoLastGuess);
 resetAllEl.addEventListener("click", () => {
     submittedGuesses = [];
     resetDraft();
-    updateHint("Alle gesetzten Tipps wurden entfernt.", "success");
+    updateHint("all attempts cleared.", "success");
     render();
 });
 editorRowEl.addEventListener("click", (event) => {
@@ -678,5 +678,5 @@ document.addEventListener("keydown", (event) => {
     }
 });
 loadCustomWordList();
-updateHint("Standardliste geladen. Du kannst sofort loslegen oder eine eigene Liste importieren.");
+updateHint("default wordlist loaded. begin inputting attempts or import a custom wordlist.");
 render();
